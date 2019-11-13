@@ -6,7 +6,7 @@ create index.js
 
 npm install express
 npm i helmet // protects headers
-npm i -g knex  //install globally to use cli command line interface
+npm install knex //install globally to use cli command line interface
 npm install sqlite3 
 
 git init
@@ -16,15 +16,7 @@ npm i nodemon -D // could do global or dev
 //scripts: node index.js // does not rerender when saved
 scripts: "server":"nodemon index.js" //will rerender upon save<
 
-server.js
-const express = require('express')
-const server = express()  //create instance of express server
-
-server.use(express.json())// allows express to read .json from body of request
-
-server.get('/', (req, res) => { res.status(200).json({hello: 'Web 23'})}
-
-module.exports = server;
+----------------------------------------------------------------------
 
 index.js
 
@@ -35,22 +27,47 @@ const PORT = process.env.PORT || 4001;
 server.listen(PORT, () => {
     console.log(`Listening on port ${PORT}...`)
 })
+------------------------------------------------------------------
+api/server.js
 
+const express = require('express')
+const server = express()  //create instance of express server
+
+server.use(express.json())// allows express to read .json from body of request
+
+server.get('/', (req, res) => { res.status(200).json({hello: 'Web 23'})}
+
+module.exports = server;
 --------------------------------------
+npm install knex
+
 knex  init
 // makes a knexfile.js
 
- development: {
+development: {
     client: 'sqlite3',
     connection: {
-      filename: './dev.sqlite3' //points to db
+      filename: './data/dev.sqlite3'
     },
     useNullAsDefault: true //prevents bugs and issues 
   },
+    migrations: {
+      directory: './data/migrations' //to put migrations under folder data
+    },
+    seeds: {
+      directory: './data/seeds'
+    },
+    // add the following
+    pool: {
+      afterCreate: (conn, done) => {
+        // runs after a connection is made to the sqlite engine
+        conn.run('PRAGMA foreign_keys = ON', done); // turn on Foreign Key enforcement
+      },
+    },
 
 
 --------------------------------------------------------
-make a folder called Data
+make a folder called data
 
 Add: db-config.js
 -used to connect to database
@@ -125,16 +142,50 @@ crud
 
 make a folder
 add files:
-projects/projects-router.js
-projects/projects-model.js
 
+auth/auth-router.js
+auth/restricted-middleware.js
+
+users:
+/users-helpers.js
+/users-helpers.test.js
+/users-model.js
+/users-router.js
+
+api:
+/api-router.js
+/middleware.js
 -------------------------------------------------------
-require project router to server.js
-and use with api/projects
 
-const projectRouter = require('./projects/projects-router')
+api:
+/api-router.js
+/middleware.js
 
-server.use('/api/projects', projectRouter)
+//export / import router and middleware to server.js
+//require project routers to server.js
+
+const express = require('express')
+
+const server = express()
+
+//bring in routers
+const authRouter = require('../auth/auth-router.js');
+const usersRouter = require('../users/users-router.js');
+
+//bring in middleware, then configure it to server
+const configureMiddleware = require('./middleware')
+configureMiddleware(server)
+
+server.use('/api/auth', authRouter);
+server.use('/api/users', usersRouter);
+
+server.use('/', (req, res) => {
+    {res.status(200).json('Its Alive')}
+})
+
+module.exports = server
+
+
 ----------------------------------------------------------------------
 helper functions for sql
 https://youtu.be/OFLPJfCNAS0
